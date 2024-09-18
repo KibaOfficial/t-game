@@ -274,9 +274,28 @@ let speed: number;
   let frameCount = 0;
 
   const inputManager = new InputManager();
+  let paused = false;
 
   function gameLoop(currentTime: number) {
     if (!GAMERUN) return;
+
+    if (inputManager.isKeyPressed("Escape")) {
+      if (!paused) {
+        paused = true;
+        console.log(`[t-game]: Game Paused`);
+      }
+    } else {
+      if (paused) {
+        paused = false;
+        console.log(`[t-game]: Game Resumed`);
+      }
+    }
+
+    if (paused) {
+      requestAnimationFrame(gameLoop)
+      return;
+    }
+
     const dt = (currentTime - lastTime) / 1000;
     lastTime = currentTime;
 
@@ -287,7 +306,6 @@ let speed: number;
       frameCount = 0;
     }
     frameCount++;
-
 
     let movement: Vector2 = new Vector2(0, 0);
     if (inputManager.isKeyPressed("w")) movement.add(new Vector2(0, -player1.speed * dt));
@@ -304,11 +322,7 @@ let speed: number;
       player1.draw(ctx);
     });
 
-    if (dt > frameDuration) {
-      requestAnimationFrame(gameLoop);
-    } else {
-      setTimeout(() => requestAnimationFrame(gameLoop), frameDuration - dt);
-    }
+    requestAnimationFrame(gameLoop);
   }
 
   GAMERUN = true;
