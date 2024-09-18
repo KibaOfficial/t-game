@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "watch": "tsc -w",
-    "clean": "rm -rf dist/*"
+    "clean": "rm -rf dist/*",
+    "build": "tsc"
   },
   "author": "",
   "license": "MIT",
