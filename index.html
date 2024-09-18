@@ -6,7 +6,7 @@
         body {
             background-color: #101010;
         }
-        #game {
+        #background, #objects, #events {
             position: absolute;
             left: 50%;
             top: 50%;
@@ -15,7 +15,12 @@
     </style>
 </head>
 <body>
-    <canvas id="game" />
-    <script src="dist/game.js" ></script>
+    <div id="game-container">
+        <canvas id="background"></canvas>
+        <canvas id="objects"></canvas>
+        <canvas id="events"></canvas>
+        <canvas id="ui"></canvas>
+    </div>
+    <script src="dist/game.js"></script>
 </body>
 </html>
