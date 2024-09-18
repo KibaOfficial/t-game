@@ -191,63 +191,6 @@ if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
   throw new Error("2D context is not supported on one or more canvases");
 }
 
-let moveUp = false;
-let moveDown = false;
-let moveLeft = false;
-let moveRight = false;
-
-document.addEventListener("keydown", (event) => {
-  switch (event.key) {
-    case "w":
-    case "W":
-      moveUp = true;
-      console.log("[t-game]: `keydown` Movement `Up`");
-      break;
-    case "a":
-    case "A":
-      moveLeft = true;
-      console.log("[t-game]: `keydown` Movement `Left`");
-      break;
-    case "s":
-    case "S":
-      moveDown = true;
-      console.log("[t-game]: `keydown` Movement `Down`");
-      break;
-    case "d":
-    case "D":
-      moveRight = true;
-      console.log("[t-game]: `keydown` Movement `Right`");
-      break;
-  }
-});
-
-document.addEventListener("keyup", (event) => {
-  switch (event.key) {
-    case "w":
-    case "W":
-      moveUp = false;
-      console.log("[t-game]: `keyup` Movement `Up`");
-      break;
-    case "a":
-    case "A":
-      moveLeft = false;
-      console.log("[t-game]: `keyup` Movement `Left`");
-      break;
-    case "s":
-    case "S":
-      moveDown = false;
-      console.log("[t-game]: `keyup` Movement `Down`");
-      break;
-    case "d":
-    case "D":
-      moveRight = false;
-      console.log("[t-game]: `keyup` Movement `Right`");
-      break;
-  }
-});
-
-let speed: number;
-
 (async () => {
   gameBackground.width = 800;
   gameBackground.height = 800;
