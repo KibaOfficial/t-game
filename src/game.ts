@@ -6,6 +6,12 @@
 const GRID_ROWS = 10;
 const GRID_COLS = 10;
 
+class Player {
+    position: Vector2;
+    constructor(position: Vector2) {
+        this.position = position;
+    }
+}
 class Vector2 {
     x: number;
     y: number;
@@ -73,7 +79,7 @@ function drawCircle(
         drawLine(ctx, new Vector2(0, y), new Vector2(GRID_COLS, y), '#303030', 0.1);
     }
 
-    let player1 = new Vector2(0.5, 0.5);
+    let player1 = new Player(new Vector2(0.5, 0.5))
     const playerRadius = 0.2;
     const playerColor = 'lightgreen';
 
@@ -88,8 +94,8 @@ function drawCircle(
         for (let y = 0; y <= GRID_ROWS; y++) {
             drawLine(ctx, new Vector2(0, y), new Vector2(GRID_COLS, y), '#303030', 0.1);
         }
-        console.log(`[t-game]: Player Pos: ${player1.array()}`)
-        drawCircle(ctx, player1, playerRadius, playerColor);
+        console.log(`[t-game]: Player Pos: ${player1.position}`)
+        drawCircle(ctx, player1.position, playerRadius, playerColor);
     }
 
     document.addEventListener('keydown', (event) => {
@@ -97,26 +103,25 @@ function drawCircle(
         switch (event.key) {
             case 'w':
             case 'W':
-                if (player1.y - speed >= 0) player1.y -= speed;
+                if (player1.position.y - speed >= 0) player1.position.y -= speed;
                 console.log('[t-game]: Movement `Up`');
                 break;
             case 'a':
             case 'A':
-                if (player1.x - speed >= 0) player1.x -= speed;
+                if (player1.position.x - speed >= 0) player1.position.x -= speed;
                 console.log('[t-game]: Movement `Left`');
                 break;
             case 's':
             case 'S':
-                if (player1.y + speed <= GRID_ROWS) player1.y += speed;
+                if (player1.position.y + speed <= GRID_ROWS) player1.position.y += speed;
                 console.log('[t-game]: Movement `Down`');
                 break;
             case 'd':
             case 'D':
-                if (player1.x + speed <= GRID_COLS) player1.x += speed;
+                if (player1.position.x + speed <= GRID_COLS) player1.position.x += speed;
                 console.log('[t-game]: Movement `Right`');
                 break;
         }
         updateContext(ctx);
     });
-    
 })()
