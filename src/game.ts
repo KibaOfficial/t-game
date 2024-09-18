@@ -68,10 +68,30 @@ class Vector2 {
   normalize(): Vector2 {
     const length = Math.sqrt(this.x * this.x + this.y * this.y);
     if (length > 0) {
-      this.x /= length;
-      this.y /= length;
+      return new Vector2(this.x / length, this.y / length);
     }
-    return this;
+    return new Vector2(0, 0);
+  }
+}
+
+class InputManager {
+  private keys: Set<string> = new Set();
+
+  constructor() {
+    document.addEventListener("keydown", this.onKeyDown.bind(this));
+    document.addEventListener("keyup", this.onKeyUp.bind(this));
+  }
+
+  private onKeyDown(event: KeyboardEvent) {
+    this.keys.add(event.key.toLowerCase());
+  }
+
+  private onKeyUp(event: KeyboardEvent) {
+    this.keys.delete(event.key.toLowerCase());
+  }
+
+  isKeyPressed(key: string): boolean {
+    return this.keys.has(key.toLowerCase());
   }
 }
 
@@ -253,6 +273,8 @@ let speed: number;
   let lastFPS = performance.now();
   let frameCount = 0;
 
+  const inputManager = new InputManager();
+
   function gameLoop(currentTime: number) {
     if (!GAMERUN) return;
     const dt = (currentTime - lastTime) / 1000;
@@ -268,15 +290,12 @@ let speed: number;
 
 
     let movement: Vector2 = new Vector2(0, 0);
-    if (moveUp) movement.add(new Vector2(0, -player1.speed * dt));
-    if (moveDown) movement.add(new Vector2(0, player1.speed * dt));
-    if (moveLeft) movement.add(new Vector2(-player1.speed * dt, 0));
-    if (moveRight) movement.add(new Vector2(player1.speed * dt, 0));
+    if (inputManager.isKeyPressed("w")) movement.add(new Vector2(0, -player1.speed * dt));
+    if (inputManager.isKeyPressed("s")) movement.add(new Vector2(0, player1.speed * dt));
+    if (inputManager.isKeyPressed("a")) movement.add(new Vector2(-player1.speed * dt, 0));
+    if (inputManager.isKeyPressed("d")) movement.add(new Vector2(player1.speed * dt, 0));
 
     if (movement.x !== 0 || movement.y !== 0) movement.normalize();
-
-    // movement.x *= player1.speed;
-    // movement.y *= player1.speed;
 
     player1.move(movement);
     console.log(`[t-game]: Player Movement: ${movement.array()}`);
