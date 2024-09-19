@@ -9,12 +9,24 @@ let GAMERUN = false;
 let FPS = 60;
 let frameDuration = 1000 / FPS;
 
+type InputManagerTypes = 'keyboard' | 'mouse';
+
+/**
+ * Represents a 2D player object with position, radius, color, and speed.
+ */
 class Player {
   position: Vector2;
   radius: number;
   color: string;
   speed: number;
 
+  /**
+   * Constructs a new Player instance.
+   * @param {Vector2} position - The position of the player as a Vector2.
+   * @param {number} [radius=0.2] - The radius of the player. Default is 0.2.
+   * @param {string} [color="lightgreen"] - The color of the player. Default is "lightgreen".
+   * @param {number} [speed=1.0] - The movement speed of the player. Default is 1.0.
+   */
   constructor(
     position: Vector2,
     radius: number = 0.2,
@@ -27,7 +39,12 @@ class Player {
     this.speed = speed;
   }
 
-  move(direction: Vector2) {
+  /**
+   * Moves the player in the specified direction, constrained by the grid boundaries.
+   * @param {Vector2} direction - The direction to move the player, as a Vector2.
+   * @returns {void}
+   */
+  move(direction: Vector2): void {
     const normalizedDirection = direction.normalize();
     const deltaX = normalizedDirection.x * this.speed;
     const deltaY = normalizedDirection.y * this.speed;
@@ -43,28 +60,55 @@ class Player {
     }
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  /**
+   * Draws the player as a circle on the canvas.
+   * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas.
+   * @returns {void}
+   */
+  draw(ctx: CanvasRenderingContext2D): void {
     drawCircle(ctx, this.position, this.radius, this.color);
   }
 }
+
+/**
+ * Represents a 2D vector with x and y components.
+ */
 class Vector2 {
   x: number;
   y: number;
 
+  /**
+   * Constructs a new Vector2 instance.
+   * @param {number} x - The x-coordinate of the vector.
+   * @param {number} y - The y-coordinate of the vector.
+   */
   constructor(x: number, y: number) {
     this.x = x;
     this.y = y;
   }
 
-  add(other: Vector2) {
+  /**
+   * Adds another Vector2 to this vector.
+   * @param {Vector2} other - The other vector to add.
+   * @returns {void}
+   */
+  add(other: Vector2): void {
     this.x += other.x;
     this.y += other.y;
   }
 
+  /**
+   * Returns an array representation of the vector.
+   * @returns {[number, number]} An array containing the x and y components of the vector.
+   */
   array(): [number, number] {
     return [this.x, this.y];
   }
 
+  /**
+   * Normalizes the vector (scales it to unit length).
+   * @returns {Vector2} A new normalized vector.
+   */
   normalize(): Vector2 {
     const length = Math.sqrt(this.x * this.x + this.y * this.y);
     if (length > 0) {
@@ -74,15 +118,19 @@ class Vector2 {
   }
 }
 
-type InputManagerTypes = 'keyboard' | 'mouse';
-
+/**
+ * Manages input from either the keyboard or the mouse.
+ */
 class InputManager {
   private type: InputManagerTypes;
   private keys: Set<string> = new Set();
   private mouseButtons: Set<number> = new Set();
   private mousePosition: Vector2 = new Vector2(0, 0);
 
-
+  /**
+   * Constructs a new InputManager instance.
+   * @param {InputManagerTypes} [type='keyboard'] - The type of input to manage ('keyboard' or 'mouse').
+   */
   constructor(type: InputManagerTypes = 'keyboard') {
     this.type = type;
     if (type === 'keyboard') {
@@ -96,57 +144,104 @@ class InputManager {
     }
   }
 
-  private onKeyDown(event: KeyboardEvent) {
+  /**
+   * Handles the keydown event for keyboard input.
+   * @param {KeyboardEvent} event - The keydown event.
+   * @returns {void}
+   */
+  private onKeyDown(event: KeyboardEvent): void {
     if (this.type === 'keyboard') {
       this.keys.add(event.key.toLowerCase());
     }
   }
-  
-  private onKeyUp(event: KeyboardEvent) {
+
+  /**
+   * Handles the keyup event for keyboard input.
+   * @param {KeyboardEvent} event - The keyup event.
+   * @returns {void}
+   */
+  private onKeyUp(event: KeyboardEvent): void {
     if (this.type === 'keyboard') {
       this.keys.delete(event.key.toLowerCase());
     }
   }
-  
-  private onMouseDown(event: MouseEvent) {
+
+  /**
+   * Handles the mousedown event for mouse input.
+   * @param {MouseEvent} event - The mousedown event.
+   * @returns {void}
+   */
+  private onMouseDown(event: MouseEvent): void {
     if (this.type === 'mouse') {
       this.mouseButtons.add(event.button);
     }
   }
-  
-  private onMouseUp(event: MouseEvent) {
+
+  /**
+   * Handles the mouseup event for mouse input.
+   * @param {MouseEvent} event - The mouseup event.
+   * @returns {void}
+   */
+  private onMouseUp(event: MouseEvent): void {
     if (this.type === 'mouse') {
       this.mouseButtons.delete(event.button);
     }
   }
-  
-  private onMouseMove(event: MouseEvent) {
+
+  /**
+   * Handles the mousemove event for mouse input.
+   * @param {MouseEvent} event - The mousemove event.
+   * @returns {void}
+   */
+  private onMouseMove(event: MouseEvent): void {
     if (this.type === 'mouse') {
       this.mousePosition = new Vector2(event.offsetX, event.offsetY);
     }
-  }  
+  }
 
+  /**
+   * Returns the current mouse position.
+   * @returns {Vector2} The current mouse position as a Vector2.
+   */
   getMousePosition(): Vector2 {
     return this.mousePosition;
   }
 
+  /**
+   * Checks if a specific mouse button is pressed.
+   * @param {number} button - The mouse button to check (0 for left, 1 for middle, 2 for right).
+   * @returns {boolean} True if the button is pressed, false otherwise.
+   */
   isMouseButtonPressed(button: number): boolean {
     return this.mouseButtons.has(button);
   }
 
-
+  /**
+   * Checks if a specific key is pressed.
+   * @param {string} key - The key to check.
+   * @returns {boolean} True if the key is pressed, false otherwise.
+   */
   isKeyPressed(key: string): boolean {
     return this.keys.has(key.toLowerCase());
   }
 }
 
+/**
+ * Draws a line on the canvas between two points.
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas.
+ * @param {Vector2} p1 - The starting point of the line.
+ * @param {Vector2} p2 - The ending point of the line.
+ * @param {string} [color="white"] - The color of the line. Default is white.
+ * @param {number} [lineWidth=1] - The width of the line. Default is 1.
+ * @returns {void}
+ */
 function drawLine(
   ctx: CanvasRenderingContext2D,
   p1: Vector2,
   p2: Vector2,
   color: string = "white",
   lineWidth: number = 1
-) {
+): void {
   ctx.save();
   ctx.beginPath();
   ctx.strokeStyle = color;
@@ -157,12 +252,20 @@ function drawLine(
   ctx.restore();
 }
 
+/**
+ * Draws a circle on the canvas.
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas.
+ * @param {Vector2} p - The center point of the circle.
+ * @param {number} radius - The radius of the circle.
+ * @param {string} [color="white"] - The color of the circle. Default is white.
+ * @returns {void}
+ */
 function drawCircle(
   ctx: CanvasRenderingContext2D,
   p: Vector2,
   radius: number,
   color: string = "white"
-) {
+): void {
   ctx.save();
   ctx.beginPath();
   ctx.fillStyle = color;
@@ -171,7 +274,13 @@ function drawCircle(
   ctx.restore();
 }
 
-function drawGrid(ctx: CanvasRenderingContext2D, color: string = "#303030") {
+/**
+ * Draws a grid on the canvas.
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas.
+ * @param {string} [color="#303030"] - The color of the grid lines. Default is #303030.
+ * @returns {void}
+ */
+function drawGrid(ctx: CanvasRenderingContext2D, color: string = "#303030"): void {
   for (let x = 0; x <= GRID_COLS; ++x) {
     drawLine(ctx, new Vector2(x, 0), new Vector2(x, GRID_ROWS), color, 0.1);
   }
@@ -180,10 +289,16 @@ function drawGrid(ctx: CanvasRenderingContext2D, color: string = "#303030") {
   }
 }
 
+/**
+ * Clears the canvas and executes the provided drawing function.
+ * @param {CanvasRenderingContext2D | null} ctx - The 2D rendering context of the canvas, or null if not available.
+ * @param {(ctx: CanvasRenderingContext2D) => void} drawFn - The function responsible for drawing on the canvas.
+ * @returns {void}
+ */
 function updateLayer(
   ctx: CanvasRenderingContext2D | null,
   drawFn: (ctx: CanvasRenderingContext2D) => void
-) {
+): void {
   if (ctx === null) {
     return;
   }
@@ -191,7 +306,13 @@ function updateLayer(
   drawFn(ctx);
 }
 
-function drawFPS(ctx: CanvasRenderingContext2D, frameCount: number) {
+/**
+ * Draws the current frame rate (FPS) on the canvas.
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas.
+ * @param {number} frameCount - The current frame count to display.
+ * @returns {void}
+ */
+function drawFPS(ctx: CanvasRenderingContext2D, frameCount: number): void {
   const metrics = ctx.measureText(`FPS: ${frameCount}`);
   if (metrics && ctx) {
     const fontHeight =
@@ -208,6 +329,7 @@ function drawFPS(ctx: CanvasRenderingContext2D, frameCount: number) {
     );
   }
 }
+
 
 const gameBackground = document.getElementById("background") as HTMLCanvasElement | null;
 const gameObjects = document.getElementById("objects") as HTMLCanvasElement | null;
@@ -232,7 +354,7 @@ if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
   throw new Error("2D context is not supported on one or more canvases");
 }
 
-(async () => {
+(() => {
   gameBackground.width = 800;
   gameBackground.height = 800;
   gameObjects.width = 800;
