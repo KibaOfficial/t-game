@@ -40,10 +40,10 @@ class Player {
   }
 
   /**
-   * Moves the player in the specified direction, constrained by the grid boundaries.
-   * @param {Vector2} direction - The direction to move the player, as a Vector2.
-   * @returns {void}
-   */
+ * Moves the player in the specified direction, constrained by the grid boundaries and considering the player's radius.
+ * @param {Vector2} direction - The direction to move the player, as a Vector2.
+ * @returns {void}
+ */
   move(direction: Vector2): void {
     const normalizedDirection = direction.normalize();
     const deltaX = normalizedDirection.x * this.speed;
@@ -52,10 +52,11 @@ class Player {
     const newX = this.position.x + deltaX;
     const newY = this.position.y + deltaY;
 
-    if (newX >= 0 && newX <= GRID_COLS) {
+    // Ensure player stays within the grid boundaries, considering the radius
+    if (newX - this.radius >= 0 && newX + this.radius <= GRID_COLS) {
       this.position.x = newX;
     }
-    if (newY >= 0 && newY <= GRID_ROWS) {
+    if (newY - this.radius >= 0 && newY + this.radius <= GRID_ROWS) {
       this.position.y = newY;
     }
   }
@@ -226,6 +227,27 @@ class InputManager {
   }
 }
 
+class Wall {
+  position: Vector2;
+  width: number;
+  height: number;
+  color: string;
+
+  constructor(position: Vector2, width: number, height: number, color: string = "gray") {
+    this.position = position;
+    this.width = width;
+    this.height = height;
+    this.color = color;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.save();
+    ctx.fillStyle = this.color;
+    ctx.fillRect(...this.position.array(), this.width, this.height);
+    ctx.restore();
+  }
+}
+
 /**
  * Draws a line on the canvas between two points.
  * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas.
@@ -354,6 +376,14 @@ if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
   throw new Error("2D context is not supported on one or more canvases");
 }
 
+// AABB
+// const rect1 = new Vector2(0, 0)
+// const rect2 = new Vector2(0, 1)
+// rect1.x < rect2.x + rect2.w &&
+// rect1.x + rect1.w > rect2.x &&
+// rect1.y < rect2.y + rect2.h &&
+// rect1.y + rect1.h > rect2.y
+
 (() => {
   gameBackground.width = 800;
   gameBackground.height = 800;
@@ -380,23 +410,9 @@ if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
   let frameCount = 0;
 
   const inputManager = new InputManager("keyboard");
-  let paused = false;
-  let lastPausePressed = false
 
   function gameLoop(currentTime: number) {
     if (!GAMERUN) return;
-
-    const pausePressed = inputManager.isKeyPressed("Escape");
-    
-    if (pausePressed && !lastPausePressed) {
-        paused = !paused;
-        console.log(`[t-game]: Game ${paused ? "Paused" : "Resumed"}`);
-    }
-
-    if (paused) {
-      requestAnimationFrame(gameLoop)
-      return;
-    }
 
     const dt = (currentTime - lastTime) / 1000;
     lastTime = currentTime;
@@ -410,10 +426,10 @@ if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
     frameCount++;
 
     let movement: Vector2 = new Vector2(0, 0);
-    if (inputManager.isKeyPressed("w")) movement.add(new Vector2(0, -player1.speed * dt));
-    if (inputManager.isKeyPressed("s")) movement.add(new Vector2(0, player1.speed * dt));
-    if (inputManager.isKeyPressed("a")) movement.add(new Vector2(-player1.speed * dt, 0));
-    if (inputManager.isKeyPressed("d")) movement.add(new Vector2(player1.speed * dt, 0));
+    if (inputManager.isKeyPressed("w") || inputManager.isKeyPressed("arrowup")) movement.add(new Vector2(0, -player1.speed * dt));
+    if (inputManager.isKeyPressed("s")  || inputManager.isKeyPressed("arrowdown")) movement.add(new Vector2(0, player1.speed * dt));
+    if (inputManager.isKeyPressed("a")  || inputManager.isKeyPressed("arrowleft")) movement.add(new Vector2(-player1.speed * dt, 0));
+    if (inputManager.isKeyPressed("d")  || inputManager.isKeyPressed("arrowright")) movement.add(new Vector2(player1.speed * dt, 0));
 
     if (movement.x !== 0 || movement.y !== 0) movement.normalize();
 
