@@ -3,11 +3,9 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const GRID_ROWS = 10;
-const GRID_COLS = 10;
+import { GRID_COLS, GRID_ROWS } from "./config.js";
+
 let GAMERUN = false;
-let FPS = 60;
-let frameDuration = 1000 / FPS;
 
 type InputManagerTypes = 'keyboard' | 'mouse';
 
@@ -352,64 +350,134 @@ function drawFPS(ctx: CanvasRenderingContext2D, frameCount: number): void {
   }
 }
 
-
-const gameBackground = document.getElementById("background") as HTMLCanvasElement | null;
-const gameObjects = document.getElementById("objects") as HTMLCanvasElement | null;
-const gameEvents = document.getElementById("events") as HTMLCanvasElement | null;
-const gameUi = document.getElementById("ui") as HTMLCanvasElement | null;
-
-if (
-  gameBackground === null ||
-  gameObjects === null ||
-  gameEvents === null ||
-  gameUi === null
-) {
-  throw new Error("One or more canvases not found");
+/**
+ * Updates the frame rate (FPS) display on the canvas and logs the current FPS to the console.
+ * Resets the frame count every second.
+ *
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the UI canvas where the FPS will be drawn.
+ * @param {number} lastFPS - The timestamp of the last FPS update.
+ * @param {number} frameCount - The current count of frames rendered since the last FPS update.
+ * @returns {{ lastFPS: number, frameCount: number }} An object containing the updated lastFPS timestamp and the reset frameCount.
+ */
+function updateFPS(ctx: CanvasRenderingContext2D, lastFPS: number, frameCount: number): { lastFPS: number; frameCount: number; } {
+  if (performance.now() > lastFPS + 1000) {
+    lastFPS = performance.now();
+    drawFPS(ctx, frameCount);
+    console.log(`[t-game]: FPS: ${frameCount}`);
+    frameCount = 0;
+  }
+  return { lastFPS, frameCount };
 }
 
-const bgCtx = gameBackground.getContext("2d");
-const objCtx = gameObjects.getContext("2d");
-const evtCtx = gameEvents.getContext("2d");
-const uiCtx = gameUi.getContext("2d");
+/**
+ * Handles player input and calculates the movement vector based on the currently pressed keys.
+ * Normalizes the movement vector if it has a non-zero length.
+ *
+ * @param {Player} player - The player object whose movement speed is considered.
+ * @param {InputManager} inputManager - The input manager instance to check for key presses.
+ * @param {number} dt - The delta time since the last frame, used to scale movement.
+ * @returns {Vector2} The normalized movement vector based on player input, or a zero vector if no keys are pressed.
+ */
+function handleInput(player: Player, inputManager: InputManager, dt: number): Vector2 {
+  let movement: Vector2 = new Vector2(0, 0);
+  if (inputManager.isKeyPressed("w") || inputManager.isKeyPressed("arrowup")) movement.add(new Vector2(0, -player.speed * dt));
+  if (inputManager.isKeyPressed("s")  || inputManager.isKeyPressed("arrowdown")) movement.add(new Vector2(0, player.speed * dt));
+  if (inputManager.isKeyPressed("a")  || inputManager.isKeyPressed("arrowleft")) movement.add(new Vector2(-player.speed * dt, 0));
+  if (inputManager.isKeyPressed("d")  || inputManager.isKeyPressed("arrowright")) movement.add(new Vector2(player.speed * dt, 0));
 
-if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
-  throw new Error("2D context is not supported on one or more canvases");
+  return movement.x !== 0 || movement.y !== 0 ? movement.normalize() : new Vector2(0, 0);
 }
 
-// AABB
-// const rect1 = new Vector2(0, 0)
-// const rect2 = new Vector2(0, 1)
-// rect1.x < rect2.x + rect2.w &&
-// rect1.x + rect1.w > rect2.x &&
-// rect1.y < rect2.y + rect2.h &&
-// rect1.y + rect1.h > rect2.y
+/**
+ * Initializes the main canvases for the game (background, objects, events, and UI).
+ * Sets the dimensions of each canvas and retrieves their 2D rendering contexts.
+ *
+ * @returns {{ bgCtx: CanvasRenderingContext2D, objCtx: CanvasRenderingContext2D, evtCtx: CanvasRenderingContext2D, uiCtx: CanvasRenderingContext2D }} 
+ * An object containing the 2D rendering contexts for each of the main canvases.
+ * @throws {Error} If any of the canvases cannot be found or if their 2D context is not supported.
+ */
+function initCanvas(): {
+  bgCtx: CanvasRenderingContext2D;
+  objCtx: CanvasRenderingContext2D;
+  evtCtx: CanvasRenderingContext2D;
+  uiCtx: CanvasRenderingContext2D;
+} {
+  const gameBackground = document.getElementById("background") as HTMLCanvasElement | null;
+  const gameObjects = document.getElementById("objects") as HTMLCanvasElement | null;
+  const gameEvents = document.getElementById("events") as HTMLCanvasElement | null;
+  const gameUi = document.getElementById("ui") as HTMLCanvasElement | null;
 
-(() => {
+  if (
+    gameBackground === null ||
+    gameObjects === null ||
+    gameEvents === null ||
+    gameUi === null
+  ) {
+    throw new Error("One or more canvases not found");
+  }
+
   gameBackground.width = 800;
   gameBackground.height = 800;
   gameObjects.width = 800;
   gameObjects.height = 800;
   gameEvents.width = 800;
   gameEvents.height = 800;
+  
+  const bgCtx = gameBackground.getContext("2d");
+  const objCtx = gameObjects.getContext("2d");
+  const evtCtx = gameEvents.getContext("2d");
+  const uiCtx = gameUi.getContext("2d");
+  
+  if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
+    throw new Error("2D context is not supported on one or more canvases");
+  }
 
   [bgCtx, objCtx, evtCtx].forEach((ctx) => {
     ctx.scale(ctx.canvas.width / GRID_COLS, ctx.canvas.height / GRID_ROWS);
   });
 
-  let player1 = new Player(new Vector2(0.5, 0.5), 0.2, "lightgreen", 0.05);
-  player1.draw(objCtx);
+  return { bgCtx, objCtx, evtCtx, uiCtx };
+}
 
-  updateLayer(bgCtx, (ctx) => {
+/**
+ * Initializes the background of the game by clearing the canvas and drawing
+ * a filled rectangle along with a grid.
+ *
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas where the background will be drawn.
+ * @returns {void}
+ */
+function initBackground(ctx: CanvasRenderingContext2D): void {
+  updateLayer(ctx, (ctx) => {
     ctx.fillStyle = "#181818";
     ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    drawGrid(bgCtx);
+    drawGrid(ctx);
   });
+}
+
+
+/**
+ * Initializes a new player instance and draws it on the specified canvas context.
+ *
+ * @param {CanvasRenderingContext2D} ctx - The 2D rendering context of the canvas where the player will be drawn.
+ * @returns {Player} The newly created Player instance.
+ */
+function initPlayer(ctx: CanvasRenderingContext2D): Player {
+  const player = new Player(new Vector2(0.5, 0.5), 0.2, "lightgreen", 0.05);
+  player.draw(ctx);
+  return player;
+}
+
+
+(() => {
+  const { bgCtx, objCtx, evtCtx, uiCtx } = initCanvas();
+  const player = initPlayer(objCtx);
+  const inputManager = new InputManager("keyboard");
+
+  initBackground(bgCtx);
 
   let lastTime = performance.now();
   let lastFPS = performance.now();
   let frameCount = 0;
-
-  const inputManager = new InputManager("keyboard");
 
   function gameLoop(currentTime: number) {
     if (!GAMERUN) return;
@@ -417,27 +485,14 @@ if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
     const dt = (currentTime - lastTime) / 1000;
     lastTime = currentTime;
 
-    if (currentTime > lastFPS + 1000) {
-      lastFPS = currentTime;
-      if (uiCtx) drawFPS(uiCtx, frameCount);
-      console.log(`[t-game]: FPS: ${frameCount}`);
-      frameCount = 0;
-    }
+    ({ lastFPS, frameCount } = updateFPS(uiCtx, lastFPS, frameCount));
     frameCount++;
 
-    let movement: Vector2 = new Vector2(0, 0);
-    if (inputManager.isKeyPressed("w") || inputManager.isKeyPressed("arrowup")) movement.add(new Vector2(0, -player1.speed * dt));
-    if (inputManager.isKeyPressed("s")  || inputManager.isKeyPressed("arrowdown")) movement.add(new Vector2(0, player1.speed * dt));
-    if (inputManager.isKeyPressed("a")  || inputManager.isKeyPressed("arrowleft")) movement.add(new Vector2(-player1.speed * dt, 0));
-    if (inputManager.isKeyPressed("d")  || inputManager.isKeyPressed("arrowright")) movement.add(new Vector2(player1.speed * dt, 0));
-
-    if (movement.x !== 0 || movement.y !== 0) movement.normalize();
-
-    player1.move(movement);
-    console.log(`[t-game]: Player Movement: ${movement.array()}`);
+    const movement = handleInput(player, inputManager, dt);
+    player.move(movement);
 
     updateLayer(objCtx, (ctx) => {
-      player1.draw(ctx);
+      player.draw(ctx);
     });
 
     requestAnimationFrame(gameLoop);
@@ -446,3 +501,4 @@ if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
   GAMERUN = true;
   gameLoop(performance.now());
 })();
+
