@@ -6,6 +6,7 @@
 import { GRID_COLS, GRID_ROWS } from "./config.js";
 
 let GAMERUN = false;
+let isPaused = false;
 
 type InputManagerTypes = 'keyboard' | 'mouse';
 
@@ -149,10 +150,14 @@ class InputManager {
    * @returns {void}
    */
   private onKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      isPaused = !isPaused;
+    }
     if (this.type === 'keyboard') {
       this.keys.add(event.key.toLowerCase());
     }
   }
+  
 
   /**
    * Handles the keyup event for keyboard input.
@@ -222,6 +227,50 @@ class InputManager {
    */
   isKeyPressed(key: string): boolean {
     return this.keys.has(key.toLowerCase());
+  }
+}
+
+class CollisionManager {
+  /**
+   * Checks if two circular objects collide.
+   * @param {Vector2} pos1 - The position of the first object.
+   * @param {number} radius1 - The radius of the first object.
+   * @param {Vector2} pos2 - The position of the second object.
+   * @param {number} radius2 - The radius of the second object.
+   * @returns {boolean} True if there is a collision, false otherwise.
+   */
+  static checkCircleCollision(
+    pos1: Vector2,
+    radius1: number,
+    pos2: Vector2,
+    radius2: number
+  ): boolean {
+    const distance = Math.sqrt(
+      (pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2
+    );
+    return distance <= radius1 + radius2;
+  }
+
+  /**
+   * Checks if a point is inside a rectangle.
+   * @param {Vector2} point - The point to check.
+   * @param {Vector2} rectPos - The position of the rectangle's top-left corner.
+   * @param {number} width - The width of the rectangle.
+   * @param {number} height - The height of the rectangle.
+   * @returns {boolean} True if the point is inside the rectangle, false otherwise.
+   */
+  static checkPointInRect(
+    point: Vector2,
+    rectPos: Vector2,
+    width: number,
+    height: number
+  ): boolean {
+    return (
+      point.x >= rectPos.x &&
+      point.x <= rectPos.x + width &&
+      point.y >= rectPos.y &&
+      point.y <= rectPos.y + height
+    );
   }
 }
 
@@ -333,22 +382,15 @@ function updateLayer(
  * @returns {void}
  */
 function drawFPS(ctx: CanvasRenderingContext2D, frameCount: number): void {
-  const metrics = ctx.measureText(`FPS: ${frameCount}`);
-  if (metrics && ctx) {
-    const fontHeight =
-      metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.font = "50px Arial";
-    ctx.fillStyle = "white";
-    ctx.textAlign = "right";
-    ctx.fillText(
-      `FPS: ${frameCount}`,
-      ctx.canvas.width - metrics.width - 10,
-      fontHeight + 10,
-      100
-    );
-  }
+  ctx.save();
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.font = "20px Arial";
+  ctx.fillStyle = "white";
+  ctx.textAlign = "right";
+  ctx.fillText(`FPS: ${frameCount}`, ctx.canvas.width, 30);
+  ctx.restore();
 }
+
 
 /**
  * Updates the frame rate (FPS) display on the canvas and logs the current FPS to the console.
@@ -422,6 +464,8 @@ function initCanvas(): {
   gameObjects.height = 800;
   gameEvents.width = 800;
   gameEvents.height = 800;
+  gameUi.width = 800;
+  gameUi.height = 900;
   
   const bgCtx = gameBackground.getContext("2d");
   const objCtx = gameObjects.getContext("2d");
@@ -454,6 +498,20 @@ function initBackground(ctx: CanvasRenderingContext2D): void {
   });
 }
 
+function drawPauseOverlay(ctx: CanvasRenderingContext2D) {
+  ctx.save();
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  ctx.fillStyle = "white";
+  ctx.font = "40px Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("PAUSED", ctx.canvas.width / 2, ctx.canvas.height / 2);
+  ctx.font = "20px Arial";
+  ctx.fillText("Press ESC to continue", ctx.canvas.width / 2, ctx.canvas.height / 2 + 30);
+  ctx.restore();
+}
 
 /**
  * Initializes a new player instance and draws it on the specified canvas context.
@@ -481,6 +539,11 @@ function initPlayer(ctx: CanvasRenderingContext2D): Player {
 
   function gameLoop(currentTime: number) {
     if (!GAMERUN) return;
+    if (isPaused) {
+      drawPauseOverlay(uiCtx);
+      requestAnimationFrame(gameLoop);
+      return;
+    }
 
     const dt = (currentTime - lastTime) / 1000;
     lastTime = currentTime;
