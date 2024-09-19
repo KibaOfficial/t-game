@@ -19,7 +19,7 @@ class Player {
     position: Vector2,
     radius: number = 0.2,
     color: string = "lightgreen",
-    speed: number
+    speed: number = 1.0
   ) {
     this.position = position;
     this.radius = radius;
@@ -74,21 +74,66 @@ class Vector2 {
   }
 }
 
-class InputManager {
-  private keys: Set<string> = new Set();
+type InputManagerTypes = 'keyboard' | 'mouse';
 
-  constructor() {
-    document.addEventListener("keydown", this.onKeyDown.bind(this));
-    document.addEventListener("keyup", this.onKeyUp.bind(this));
+class InputManager {
+  private type: InputManagerTypes;
+  private keys: Set<string> = new Set();
+  private mouseButtons: Set<number> = new Set();
+  private mousePosition: Vector2 = new Vector2(0, 0);
+
+
+  constructor(type: InputManagerTypes = 'keyboard') {
+    this.type = type;
+    if (type === 'keyboard') {
+      document.addEventListener("keydown", this.onKeyDown.bind(this));
+      document.addEventListener("keyup", this.onKeyUp.bind(this));
+    }
+    if (type === 'mouse') {
+      document.addEventListener("mousedown", this.onMouseDown.bind(this));
+      document.addEventListener("mouseup", this.onMouseUp.bind(this));
+      document.addEventListener("mousemove", this.onMouseMove.bind(this));
+    }
   }
 
   private onKeyDown(event: KeyboardEvent) {
-    this.keys.add(event.key.toLowerCase());
+    if (this.type === 'keyboard') {
+      this.keys.add(event.key.toLowerCase());
+    }
+  }
+  
+  private onKeyUp(event: KeyboardEvent) {
+    if (this.type === 'keyboard') {
+      this.keys.delete(event.key.toLowerCase());
+    }
+  }
+  
+  private onMouseDown(event: MouseEvent) {
+    if (this.type === 'mouse') {
+      this.mouseButtons.add(event.button);
+    }
+  }
+  
+  private onMouseUp(event: MouseEvent) {
+    if (this.type === 'mouse') {
+      this.mouseButtons.delete(event.button);
+    }
+  }
+  
+  private onMouseMove(event: MouseEvent) {
+    if (this.type === 'mouse') {
+      this.mousePosition = new Vector2(event.offsetX, event.offsetY);
+    }
+  }  
+
+  getMousePosition(): Vector2 {
+    return this.mousePosition;
   }
 
-  private onKeyUp(event: KeyboardEvent) {
-    this.keys.delete(event.key.toLowerCase());
+  isMouseButtonPressed(button: number): boolean {
+    return this.mouseButtons.has(button);
   }
+
 
   isKeyPressed(key: string): boolean {
     return this.keys.has(key.toLowerCase());
@@ -153,6 +198,8 @@ function drawFPS(ctx: CanvasRenderingContext2D, frameCount: number) {
       metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.font = "50px Arial";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "right";
     ctx.fillText(
       `FPS: ${frameCount}`,
       ctx.canvas.width - metrics.width - 10,
@@ -162,15 +209,9 @@ function drawFPS(ctx: CanvasRenderingContext2D, frameCount: number) {
   }
 }
 
-const gameBackground = document.getElementById(
-  "background"
-) as HTMLCanvasElement | null;
-const gameObjects = document.getElementById(
-  "objects"
-) as HTMLCanvasElement | null;
-const gameEvents = document.getElementById(
-  "events"
-) as HTMLCanvasElement | null;
+const gameBackground = document.getElementById("background") as HTMLCanvasElement | null;
+const gameObjects = document.getElementById("objects") as HTMLCanvasElement | null;
+const gameEvents = document.getElementById("events") as HTMLCanvasElement | null;
 const gameUi = document.getElementById("ui") as HTMLCanvasElement | null;
 
 if (
@@ -216,22 +257,18 @@ if (bgCtx === null || objCtx === null || evtCtx === null || uiCtx === null) {
   let lastFPS = performance.now();
   let frameCount = 0;
 
-  const inputManager = new InputManager();
+  const inputManager = new InputManager("keyboard");
   let paused = false;
+  let lastPausePressed = false
 
   function gameLoop(currentTime: number) {
     if (!GAMERUN) return;
 
-    if (inputManager.isKeyPressed("Escape")) {
-      if (!paused) {
-        paused = true;
-        console.log(`[t-game]: Game Paused`);
-      }
-    } else {
-      if (paused) {
-        paused = false;
-        console.log(`[t-game]: Game Resumed`);
-      }
+    const pausePressed = inputManager.isKeyPressed("Escape");
+    
+    if (pausePressed && !lastPausePressed) {
+        paused = !paused;
+        console.log(`[t-game]: Game ${paused ? "Paused" : "Resumed"}`);
     }
 
     if (paused) {
