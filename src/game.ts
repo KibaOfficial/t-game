@@ -230,6 +230,9 @@ class InputManager {
   }
 }
 
+/**
+ * Manages collision detection for two objects
+ */
 class CollisionManager {
   /**
    * Checks if two circular objects collide.
@@ -498,6 +501,21 @@ function initBackground(ctx: CanvasRenderingContext2D): void {
   });
 }
 
+function initObjects(ctx: CanvasRenderingContext2D): void {
+  updateLayer(ctx, (ctx) => {
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    const walls: Wall[] = [
+      new Wall(new Vector2(0, 0), 1, 1),
+      new Wall(new Vector2(1, 0), 1, 1, "red"),
+      new Wall(new Vector2(2, 0), 1, 1, "blue"),
+    ];
+
+    walls.forEach((wall) => {
+      wall.draw(ctx);
+    });
+  })
+}
+
 function drawPauseOverlay(ctx: CanvasRenderingContext2D) {
   ctx.save();
   ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
@@ -532,7 +550,8 @@ function initPlayer(ctx: CanvasRenderingContext2D): Player {
   const inputManager = new InputManager("keyboard");
 
   initBackground(bgCtx);
-
+  initObjects(objCtx);
+  
   let lastTime = performance.now();
   let lastFPS = performance.now();
   let frameCount = 0;
